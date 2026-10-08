@@ -36,5 +36,26 @@ back/
 └── src/
     ├── index.ts         # app Hono (routes, erreurs au format ErrorResponse)
     ├── db.ts            # client Postgres (Bun.SQL)
-    └── env.ts           # variables d'environnement validées avec Zod
+    ├── env.ts           # variables d'environnement validées avec Zod
+    └── lib/validator.ts # zValidator avec erreurs au format ErrorResponse
+```
+
+## Validation des requêtes
+
+Utiliser `validate` (wrapper de `@hono/zod-validator`) plutôt que `zValidator` directement :
+
+```ts
+import { z } from "zod";
+import { validate } from "./lib/validator";
+
+app.patch(
+  "/members/:id",
+  validate("param", z.object({ id: z.coerce.number().int().positive() })), // invalide → 400
+  validate("json", memberUpdateSchema),                                    // invalide → 422
+  (c) => {
+    const { id } = c.req.valid("param");
+    const body = c.req.valid("json");
+    // ...
+  },
+);
 ```
