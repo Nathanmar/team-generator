@@ -1,9 +1,85 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Squad Generator - Swagger UI</title>
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.18.2/swagger-ui.css" />
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #fafafa;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    .topbar-banner {
+      background: #1f2937;
+      color: #fff;
+      padding: 12px 24px;
+      font-size: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .badge {
+      background: #10b981;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-weight: bold;
+      font-size: 12px;
+    }
+    .summary-box {
+      background: #eef2ff;
+      border-left: 4px solid #6366f1;
+      padding: 10px 20px;
+      color: #3730a3;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar-banner">
+    <div><strong>Group Generator (M2)</strong> — Contrat OpenAPI 3.0.3 (Bun + Hono + Zod + React)</div>
+    <div class="badge">Prêt pour validation squad</div>
+  </div>
+  <div class="summary-box">
+    <strong>💡 Logique métier active :</strong> Sélection des technos (front/back) avec note de niveau (1 à 5) ➔ Calcul automatique du profil (front/back/fullstack) ➔ Génération d'équipes équilibrées de taille N.
+  </div>
+
+  <div id="swagger-ui"></div>
+
+  <script src="https://unpkg.com/swagger-ui-dist@5.18.2/swagger-ui-bundle.js"></script>
+  <script src="https://unpkg.com/swagger-ui-dist@5.18.2/swagger-ui-standalone-preset.js"></script>
+  <script src="https://unpkg.com/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+
+  <!-- Contenu OpenAPI YAML synchronisé -->
+  <script id="openapi-spec-content" type="text/yaml">
 openapi: 3.0.3
 info:
   title: Squad Generator API
   version: 1.0.0
   description: |
     Contrat d'API OpenAPI 3.0.3 pour le projet Group Generator (M2).
+    
+    **Logique métier & Algorithme :**
+    - Lors de l'inscription, chaque membre sélectionne des technologies et s'attribue une note de niveau (1 à 5).
+    - Chaque technologie possède une catégorie (`front` ou `back`).
+    - L'application calcule automatiquement le profil du membre (`front`, `back` ou `fullstack`) selon ses scores.
+    - La génération de groupes forme ensuite des équipes équilibrées selon la capacité N demandée.
+
+    **Squad :**
+    - 2 Développeurs Back-end
+    - 2 Développeurs Front-end
+    - 1 Garant du contrat
+
+    **Stack technique convenue :**
+    - Runtime : Bun
+    - Back-end : Hono + Zod
+    - Front-end : React
+
+    **Pacte d'équipe :**
+    - Aucune ligne de code d'implémentation avant validation formelle par les 5 membres de la squad.
 servers:
   - url: http://localhost:3000
     description: Serveur de développement local (Bun / Hono)
@@ -17,9 +93,6 @@ tags:
     description: Référentiel des technologies avec leur catégorie (front / back)
 
 paths:
-  # ==========================================
-  # ENTITÉ : MEMBERS (PERSONNES & NIVEAUX)
-  # ==========================================
   /members:
     get:
       tags:
@@ -247,9 +320,6 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  # ==========================================
-  # ENTITÉ : GROUPS (GÉNÉRATION INTELLIGENTE)
-  # ==========================================
   /groups:
     get:
       tags:
@@ -349,9 +419,6 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  # ==========================================
-  # ENTITÉ : TECHNOS (RÉFÉRENTIEL AVEC FLAG FRONT/BACK)
-  # ==========================================
   /technos:
     get:
       tags:
@@ -385,9 +452,6 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-# ==========================================
-# COMPOSANTS & SCHÉMAS (ZOD-FRIENDLY)
-# ==========================================
 components:
   schemas:
     Techno:
@@ -600,3 +664,32 @@ components:
           example:
             error: Internal server error
             message: An unexpected internal error occurred
+  </script>
+
+  <script>
+    window.onload = function() {
+      try {
+        const rawYaml = document.getElementById('openapi-spec-content').textContent;
+        const parsedSpec = jsyaml.load(rawYaml);
+        
+        window.ui = SwaggerUIBundle({
+          spec: parsedSpec,
+          dom_id: '#swagger-ui',
+          deepLinking: true,
+          presets: [
+            SwaggerUIBundle.presets.apis,
+            SwaggerUIStandalonePreset
+          ],
+          plugins: [
+            SwaggerUIBundle.plugins.DownloadUrl
+          ],
+          layout: "StandaloneLayout"
+        });
+      } catch (err) {
+        console.error("Erreur de chargement de la spécification :", err);
+        document.getElementById('swagger-ui').innerHTML = '<div style="padding: 20px; color: red;">Erreur lors du rendu Swagger UI : ' + err.message + '</div>';
+      }
+    };
+  </script>
+</body>
+</html>
