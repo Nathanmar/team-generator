@@ -1,11 +1,11 @@
 import { HTTPException } from "hono/http-exception";
 import { sql } from "../db";
-import { computeSpeciality, getMembersTechnos, type Speciality } from "./members";
+import { computeSpeciality, getMembersTechnos, memberLevel, type Speciality } from "./members";
 
 /** Group (openapi.yml). */
 export type Group = { id: number; group_name: string; capacity: number; group_level: number; members: number[] };
 
-/** Membre tel que vu par le tirage : `level` = moyenne de ses notes, 0 s'il n'en a aucune. */
+/** Membre tel que vu par le tirage : `level` = memberLevel (moyenne des moyennes front et back), 0 sans note. */
 export type DraftMember = { id: number; speciality: Speciality; level: number };
 
 const SPECIALITY_ORDER: Record<Speciality, number> = { front: 0, back: 1, fullstack: 2 };
@@ -108,7 +108,7 @@ export async function generateGroups(capacity: number): Promise<Group[]> {
     const technos = await getMembersTechnos(ids, tx);
     const members: DraftMember[] = ids.map((id: number) => {
       const memberTechnos = technos.get(id) ?? [];
-      return { id, speciality: computeSpeciality(memberTechnos), level: average(memberTechnos.map((t) => t.level)) };
+      return { id, speciality: computeSpeciality(memberTechnos), level: memberLevel(memberTechnos) };
     });
 
     await tx`DELETE FROM groups`;
