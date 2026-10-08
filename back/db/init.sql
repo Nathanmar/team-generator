@@ -2,11 +2,6 @@
 -- Exécuté automatiquement par Postgres au premier démarrage du volume
 -- (relancer avec `bun run db:reset` après modification).
 
-CREATE TABLE specialities (
-  id   SERIAL PRIMARY KEY,
-  name TEXT NOT NULL UNIQUE
-);
-
 CREATE TABLE technos (
   id   SERIAL PRIMARY KEY,
   name TEXT NOT NULL UNIQUE,
@@ -14,13 +9,12 @@ CREATE TABLE technos (
 );
 
 CREATE TABLE members (
-  id            SERIAL PRIMARY KEY,
-  name          TEXT NOT NULL,
-  first_name    TEXT NOT NULL,
-  speciality_id INTEGER NOT NULL REFERENCES specialities (id)
+  id         SERIAL PRIMARY KEY,
+  name       TEXT NOT NULL,
+  first_name TEXT NOT NULL
 );
 
--- Level : niveau d'expérience d'un membre sur une techno (Member.technos).
+-- Level : note de 1 à 5 d'un membre sur une techno (`level` dans le contrat).
 CREATE TABLE levels (
   member_id  INTEGER NOT NULL REFERENCES members (id) ON DELETE CASCADE,
   techno_id  INTEGER NOT NULL REFERENCES technos (id) ON DELETE CASCADE,
@@ -42,11 +36,7 @@ CREATE TABLE group_members (
 );
 
 -- Référentiels (pas d'endpoint de création dans le contrat).
-INSERT INTO specialities (name) VALUES
-  ('Front-end'),
-  ('Back-end'),
-  ('Full-stack');
-
+-- Les 4 premières technos reprennent les ids des exemples d'openapi.yml.
 INSERT INTO technos (name, type) VALUES
   ('React', 'front'),
   ('Hono', 'back'),

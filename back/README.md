@@ -50,8 +50,7 @@ back/
     └── routes/          # un routeur Hono par ressource, monté dans index.ts
         ├── members.ts       → /members
         ├── groups.ts        → /groups
-        ├── technos.ts       → /technos
-        └── specialities.ts  → /specialities
+        └── technos.ts       → /technos
 ```
 
 Les routes d'une ressource s'écrivent dans son fichier, avec des chemins relatifs :
