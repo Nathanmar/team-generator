@@ -1,7 +1,27 @@
 import type { z } from 'zod'
 import { errorResponseSchema, type ErrorResponse } from './schemas'
 
-const API_URL = import.meta.env.VITE_API_URL ?? '/api'
+export const API_URL = import.meta.env.VITE_API_URL ?? '/api'
+
+/**
+ * `true` si les appels sont servis par le mock MSW plutôt que par le back
+ * (forcé via `dev:mock`, ou back injoignable en dev). Fixé au démarrage par `main.tsx`.
+ */
+export let apiMocked = false
+
+export function setApiMocked() {
+  apiMocked = true
+}
+
+/** Le back répond-il ? (un proxy Vite sans back renvoie une erreur non JSON). */
+export async function isBackendUp() {
+  try {
+    const res = await fetch(`${API_URL}/technos`, { signal: AbortSignal.timeout(2000) })
+    return !!res.headers.get('content-type')?.includes('application/json')
+  } catch {
+    return false
+  }
+}
 
 /** Erreur HTTP normalisée selon `ErrorResponse` du contrat. */
 export class ApiError extends Error {
