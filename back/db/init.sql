@@ -2,12 +2,6 @@
 -- Exécuté automatiquement par Postgres au premier démarrage du volume
 -- (relancer avec `bun run db:reset` après modification).
 
--- Obsolète depuis le contrat v3 (spécialité calculée) : à supprimer avec /specialities.
-CREATE TABLE specialities (
-  id   SERIAL PRIMARY KEY,
-  name TEXT NOT NULL UNIQUE
-);
-
 CREATE TABLE technos (
   id   SERIAL PRIMARY KEY,
   name TEXT NOT NULL UNIQUE,
@@ -43,11 +37,6 @@ CREATE TABLE group_members (
 
 -- Référentiels (pas d'endpoint de création dans le contrat).
 -- Les 4 premières technos reprennent les ids des exemples d'openapi.yml.
-INSERT INTO specialities (name) VALUES
-  ('Front-end'),
-  ('Back-end'),
-  ('Full-stack');
-
 INSERT INTO technos (name, type) VALUES
   ('React', 'front'),
   ('Hono', 'back'),

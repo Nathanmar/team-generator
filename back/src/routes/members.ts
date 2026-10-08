@@ -3,8 +3,13 @@ import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 import { sql } from "../db";
 import { validate } from "../lib/validator";
-import { assertTechnosExist } from "../services/levels";
-import { computeSpeciality, getMembersTechnos, replaceMemberTechnos, type MemberTechno } from "../services/members";
+import {
+  assertTechnosExist,
+  computeSpeciality,
+  getMembersTechnos,
+  replaceMemberTechnos,
+  type MemberTechno,
+} from "../services/members";
 
 type MemberRow = { id: number; name: string; first_name: string };
 

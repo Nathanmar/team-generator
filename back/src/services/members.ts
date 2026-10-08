@@ -1,4 +1,5 @@
 import type { SQL, TransactionSQL } from "bun";
+import { HTTPException } from "hono/http-exception";
 import { sql } from "../db";
 
 export type TechnoType = "front" | "back";
@@ -24,6 +25,20 @@ export function computeSpeciality(technos: MemberTechno[]): Speciality {
 
   if (Math.abs(front - back) < FULLSTACK_THRESHOLD) return "fullstack";
   return front > back ? "front" : "back";
+}
+
+/** 422 "Invalid techno id: …" si au moins une techno n'existe pas. */
+export async function assertTechnosExist(ids: number[], db: SQL = sql): Promise<void> {
+  const unique = [...new Set(ids)];
+  if (unique.length === 0) return;
+
+  const rows: { id: number }[] = await db`SELECT id FROM technos WHERE id IN ${db(unique)}`;
+  const found = new Set(rows.map((row) => row.id));
+  const missing = unique.filter((id) => !found.has(id));
+
+  if (missing.length > 0) {
+    throw new HTTPException(422, { message: `Invalid techno id: ${missing.join(", ")}` });
+  }
 }
 
 /** Remplace les notes d'un membre (à appeler dans `sql.begin`). */

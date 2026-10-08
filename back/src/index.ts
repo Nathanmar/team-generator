@@ -9,7 +9,6 @@ import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 import groups from "./routes/groups";
 import members from "./routes/members";
-import specialities from "./routes/specialities";
 import technos from "./routes/technos";
 
 // Résolution robuste du fichier openapi.yml à la racine du projet
@@ -59,7 +58,6 @@ app.get("/health", async (c) => {
 app.route("/members", members);
 app.route("/groups", groups);
 app.route("/technos", technos);
-app.route("/specialities", specialities);
 
 app.notFound((c) =>
   c.json({ error: "Not found", message: `Route ${c.req.method} ${c.req.path} not found` }, 404),
