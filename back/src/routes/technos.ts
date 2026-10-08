@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { sql } from "../db";
 
-type Techno = { id: number; name: string; type: "front" | "back" };
+type Techno = { id: number; name: string; type: "front" | "back" | "fullstack" };
 
 const technos = new Hono();
 

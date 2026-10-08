@@ -10,7 +10,7 @@ CREATE TABLE specialities (
 CREATE TABLE technos (
   id   SERIAL PRIMARY KEY,
   name TEXT NOT NULL UNIQUE,
-  type TEXT NOT NULL CHECK (type IN ('front', 'back'))
+  type TEXT NOT NULL CHECK (type IN ('front', 'back', 'fullstack'))
 );
 
 CREATE TABLE members (
