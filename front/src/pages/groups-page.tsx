@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 import { useGenerateGroups, useGroups, useResetGroups } from '@/api/groups'
 import { useMembers } from '@/api/members'
 import { generateGroupsParamsSchema, type Group, type Member } from '@/api/schemas'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 import { SpecialityBadge } from '@/components/members/member-badges'
 import { QueryState } from '@/components/query-state'
 import { Badge } from '@/components/ui/badge'
@@ -37,7 +38,6 @@ export function GroupsPage() {
   }
 
   function onReset() {
-    if (!window.confirm('Supprimer tous les groupes ?')) return
     resetGroups.mutate(undefined, {
       onSuccess: () => toast.success('Groupes réinitialisés'),
       onError: (err) => toast.error(err.message),
@@ -88,17 +88,24 @@ export function GroupsPage() {
               : 'Générer les groupes'}
         </Button>
         {hasGroups && (
-          <Button
-            type="button"
-            variant="outline"
-            size="lg"
-            onClick={onReset}
-            disabled={resetGroups.isPending}
-            className="sm:ml-auto"
-          >
-            <RotateCcwIcon />
-            Réinitialiser
-          </Button>
+          <ConfirmDialog
+            title="Réinitialiser les groupes ?"
+            description="Tous les groupes générés seront supprimés. Les membres sont conservés."
+            confirmLabel="Réinitialiser"
+            onConfirm={onReset}
+            trigger={
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                disabled={resetGroups.isPending}
+                className="sm:ml-auto"
+              >
+                <RotateCcwIcon />
+                Réinitialiser
+              </Button>
+            }
+          />
         )}
       </form>
 

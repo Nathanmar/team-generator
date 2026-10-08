@@ -1,7 +1,10 @@
+import { PlusIcon } from 'lucide-react'
 import { useMembers } from '@/api/members'
-import { AddMemberDialog } from '@/components/members/add-member-dialog'
+import { MemberActions } from '@/components/members/member-actions'
 import { SpecialityBadge, TechnoBadges } from '@/components/members/member-badges'
+import { MemberFormDialog } from '@/components/members/member-form-dialog'
 import { QueryState } from '@/components/query-state'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Table,
@@ -26,7 +29,14 @@ export function MembersPage() {
               : 'Personnes inscrites et leurs niveaux par techno'}
           </p>
         </div>
-        <AddMemberDialog />
+        <MemberFormDialog
+          trigger={
+            <Button size="lg" className="w-full sm:w-auto">
+              <PlusIcon />
+              Ajouter une personne
+            </Button>
+          }
+        />
       </div>
 
       <QueryState
@@ -40,11 +50,14 @@ export function MembersPage() {
           {members.data?.map((m) => (
             <li key={m.id}>
               <Card size="sm">
-                <CardHeader className="flex flex-row items-center justify-between gap-2">
-                  <CardTitle>
-                    {m.first_name} {m.name}
-                  </CardTitle>
-                  <SpecialityBadge speciality={m.speciality} />
+                <CardHeader className="flex flex-row items-start justify-between gap-2">
+                  <div className="grid gap-1.5">
+                    <CardTitle>
+                      {m.first_name} {m.name}
+                    </CardTitle>
+                    <SpecialityBadge speciality={m.speciality} />
+                  </div>
+                  <MemberActions member={m} />
                 </CardHeader>
                 <CardContent>
                   <TechnoBadges technos={m.technos} />
@@ -63,6 +76,7 @@ export function MembersPage() {
                 <TableHead>Prénom</TableHead>
                 <TableHead>Spécialité</TableHead>
                 <TableHead>Technos & niveaux</TableHead>
+                <TableHead className="pr-4 text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -75,6 +89,9 @@ export function MembersPage() {
                   </TableCell>
                   <TableCell className="whitespace-normal">
                     <TechnoBadges technos={m.technos} />
+                  </TableCell>
+                  <TableCell className="pr-4">
+                    <MemberActions member={m} />
                   </TableCell>
                 </TableRow>
               ))}

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { request } from './client'
+import { groupsKeys } from './groups'
 import {
   memberInputSchema,
   memberSchema,
@@ -57,6 +58,10 @@ export function useDeleteMember() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: membersApi.remove,
-    onSuccess: () => qc.invalidateQueries({ queryKey: membersKeys.all }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: membersKeys.all })
+      // La personne supprimée disparaît aussi de son groupe.
+      qc.invalidateQueries({ queryKey: groupsKeys.all })
+    },
   })
 }
