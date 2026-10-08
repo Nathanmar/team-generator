@@ -2,6 +2,7 @@
 -- Exécuté automatiquement par Postgres au premier démarrage du volume
 -- (relancer avec `bun run db:reset` après modification).
 
+-- Obsolète depuis le contrat v3 (spécialité calculée) : à supprimer avec /specialities.
 CREATE TABLE specialities (
   id   SERIAL PRIMARY KEY,
   name TEXT NOT NULL UNIQUE
@@ -9,17 +10,17 @@ CREATE TABLE specialities (
 
 CREATE TABLE technos (
   id   SERIAL PRIMARY KEY,
-  name TEXT NOT NULL UNIQUE
+  name TEXT NOT NULL UNIQUE,
+  type TEXT NOT NULL CHECK (type IN ('front', 'back'))
 );
 
 CREATE TABLE members (
-  id            SERIAL PRIMARY KEY,
-  name          TEXT NOT NULL,
-  first_name    TEXT NOT NULL,
-  speciality_id INTEGER NOT NULL REFERENCES specialities (id)
+  id         SERIAL PRIMARY KEY,
+  name       TEXT NOT NULL,
+  first_name TEXT NOT NULL
 );
 
--- Level : niveau d'expérience d'un membre sur une techno (Member.technos).
+-- Level : note de 1 à 5 d'un membre sur une techno (`level` dans le contrat).
 CREATE TABLE levels (
   member_id  INTEGER NOT NULL REFERENCES members (id) ON DELETE CASCADE,
   techno_id  INTEGER NOT NULL REFERENCES technos (id) ON DELETE CASCADE,
@@ -41,17 +42,19 @@ CREATE TABLE group_members (
 );
 
 -- Référentiels (pas d'endpoint de création dans le contrat).
+-- Les 4 premières technos reprennent les ids des exemples d'openapi.yml.
 INSERT INTO specialities (name) VALUES
   ('Front-end'),
   ('Back-end'),
   ('Full-stack');
 
-INSERT INTO technos (name) VALUES
-  ('React'),
-  ('Laravel'),
-  ('Vue'),
-  ('Angular'),
-  ('Node.js'),
-  ('Symfony'),
-  ('PostgreSQL'),
-  ('Docker');
+INSERT INTO technos (name, type) VALUES
+  ('React', 'front'),
+  ('Hono', 'back'),
+  ('TypeScript', 'front'),
+  ('PostgreSQL', 'back'),
+  ('Vue', 'front'),
+  ('Angular', 'front'),
+  ('Node.js', 'back'),
+  ('Laravel', 'back'),
+  ('Symfony', 'back');
