@@ -2,8 +2,8 @@ import type { SQL, TransactionSQL } from "bun";
 import { HTTPException } from "hono/http-exception";
 import { sql } from "../db";
 
-export type TechnoType = "front" | "back";
-export type Speciality = TechnoType | "fullstack";
+export type TechnoType = "front" | "back" | "fullstack";
+export type Speciality = "front" | "back" | "fullstack";
 
 /** MemberTechnoInput (openapi.yml). */
 export type MemberTechnoInput = { techno_id: number; level: number };
@@ -16,15 +16,28 @@ export type MemberTechno = { techno_id: number; name: string; type: TechnoType; 
 const FULLSTACK_THRESHOLD = 1;
 
 const average = (levels: number[]) =>
-  levels.length === 0 ? 0 : levels.reduce((sum, level) => sum + level, 0) / levels.length;
+  levels.length === 0 ? null : levels.reduce((sum, level) => sum + level, 0) / levels.length;
+
+/** Moyennes des notes front et back (null si aucune note) ; une techno fullstack compte des deux côtés. */
+export function sideAverages(technos: MemberTechno[]): { front: number | null; back: number | null } {
+  const side = (type: "front" | "back") =>
+    average(technos.filter((t) => t.type === type || t.type === "fullstack").map((t) => t.level));
+  return { front: side("front"), back: side("back") };
+}
 
 /** Profil déduit des notes : un côté sans techno compte pour 0. */
 export function computeSpeciality(technos: MemberTechno[]): Speciality {
-  const front = average(technos.filter((t) => t.type === "front").map((t) => t.level));
-  const back = average(technos.filter((t) => t.type === "back").map((t) => t.level));
+  const { front, back } = sideAverages(technos);
+  const gap = (front ?? 0) - (back ?? 0);
 
-  if (Math.abs(front - back) < FULLSTACK_THRESHOLD) return "fullstack";
-  return front > back ? "front" : "back";
+  if (Math.abs(gap) < FULLSTACK_THRESHOLD) return "fullstack";
+  return gap > 0 ? "front" : "back";
+}
+
+/** Niveau utilisé pour les groupes : moyenne des moyennes front et back (côté sans note ignoré), 0 sans note. */
+export function memberLevel(technos: MemberTechno[]): number {
+  const { front, back } = sideAverages(technos);
+  return average([front, back].filter((side): side is number => side !== null)) ?? 0;
 }
 
 /** 422 "Invalid techno id: …" si au moins une techno n'existe pas. */
