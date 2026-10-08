@@ -1,8 +1,9 @@
 import { useId, useState, type FormEvent, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import { useCreateMember, useUpdateMember } from '@/api/members'
-import { memberInputSchema, technoTypeSchema, type Member, type Techno } from '@/api/schemas'
+import { memberInputSchema, type Member } from '@/api/schemas'
 import { useTechnos } from '@/api/technos'
+import { TechnoPicker } from '@/components/members/techno-picker'
 import { QueryState } from '@/components/query-state'
 import { Button } from '@/components/ui/button'
 import {
@@ -16,20 +17,13 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { cn } from '@/lib/utils'
 
-const LEVELS = [1, 2, 3, 4, 5]
 const DEFAULT_LEVEL = 3
-const TYPE_LABELS: Record<Techno['type'], string> = {
-  front: 'Front',
-  back: 'Back',
-  fullstack: 'Fullstack',
-}
 
 type Values = {
   firstName: string
   name: string
-  /** techno_id -> niveau, pour les technos cochées uniquement. */
+  /** techno_id -> niveau, pour les technos choisies uniquement. */
   levels: Record<number, number>
 }
 
@@ -64,12 +58,6 @@ export function MemberFormDialog({ member, trigger }: { member?: Member; trigger
     setValues((v) => ({ ...v, levels: fn(v.levels) }))
   }
 
-  function toggleTechno(id: number) {
-    setLevels(({ [id]: current, ...rest }) =>
-      current === undefined ? { ...rest, [id]: DEFAULT_LEVEL } : rest,
-    )
-  }
-
   function onSubmit(e: FormEvent) {
     e.preventDefault()
     const parsed = memberInputSchema.safeParse({
@@ -85,7 +73,7 @@ export function MemberFormDialog({ member, trigger }: { member?: Member; trigger
     for (const issue of parsed.error?.issues ?? []) {
       next[issue.path[0] as keyof Errors] ??= issue.message
     }
-    if (Object.keys(values.levels).length === 0) next.technos = 'Sélectionnez au moins une techno'
+    if (Object.keys(values.levels).length === 0) next.technos = 'Ajoutez au moins une techno'
     setErrors(next)
     if (!parsed.success || next.technos) return
 
@@ -113,7 +101,7 @@ export function MemberFormDialog({ member, trigger }: { member?: Member; trigger
               {member ? `Modifier ${member.first_name} ${member.name}` : 'Nouvelle personne'}
             </DialogTitle>
             <DialogDescription>
-              Sélectionnez ses technos et notez son niveau de 1 (débutant) à 5 (expert).
+              Ajoutez ses technos et notez son niveau de 1 (débutant) à 5 (expert).
             </DialogDescription>
           </DialogHeader>
 
@@ -138,22 +126,19 @@ export function MemberFormDialog({ member, trigger }: { member?: Member; trigger
             </Field>
           </div>
 
-          <fieldset className="grid gap-3">
-            <legend className="mb-3 text-sm font-medium">Technos</legend>
+          <Field id={`${ids}-technos`} label="Technos" error={errors.technos}>
             <QueryState isPending={technos.isPending} error={technos.error}>
-              {technoTypeSchema.options.map((type) => (
-                <TechnoGroup
-                  key={type}
-                  title={TYPE_LABELS[type]}
-                  technos={technos.data?.filter((t) => t.type === type) ?? []}
-                  levels={values.levels}
-                  onToggle={toggleTechno}
-                  onLevelChange={(id, level) => setLevels((prev) => ({ ...prev, [id]: level }))}
-                />
-              ))}
+              <TechnoPicker
+                id={`${ids}-technos`}
+                technos={technos.data ?? []}
+                levels={values.levels}
+                invalid={!!errors.technos}
+                onAdd={(id) => setLevels((prev) => ({ ...prev, [id]: DEFAULT_LEVEL }))}
+                onRemove={(id) => setLevels(({ [id]: _removed, ...rest }) => rest)}
+                onLevelChange={(id, level) => setLevels((prev) => ({ ...prev, [id]: level }))}
+              />
             </QueryState>
-            {errors.technos && <p className="text-sm text-destructive">{errors.technos}</p>}
-          </fieldset>
+          </Field>
 
           <DialogFooter>
             <Button type="submit" size="lg" disabled={isPending}>
@@ -182,70 +167,6 @@ function Field({
       <Label htmlFor={id}>{label}</Label>
       {children}
       {error && <p className="text-sm text-destructive">{error}</p>}
-    </div>
-  )
-}
-
-function TechnoGroup({
-  title,
-  technos,
-  levels,
-  onToggle,
-  onLevelChange,
-}: {
-  title: string
-  technos: Techno[]
-  levels: Record<number, number>
-  onToggle: (id: number) => void
-  onLevelChange: (id: number, level: number) => void
-}) {
-  if (technos.length === 0) return null
-
-  return (
-    <div className="grid gap-1">
-      <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{title}</p>
-      <ul className="divide-y rounded-lg border">
-        {technos.map((t) => {
-          const level = levels[t.id]
-          return (
-            <li
-              key={t.id}
-              className="flex min-h-11 flex-wrap items-center justify-between gap-2 px-3 py-1.5"
-            >
-              <label className="flex cursor-pointer items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  className="size-4 accent-primary"
-                  checked={level !== undefined}
-                  onChange={() => onToggle(t.id)}
-                />
-                {t.name}
-              </label>
-              {level !== undefined && (
-                <div role="radiogroup" aria-label={`Niveau en ${t.name}`} className="flex gap-1">
-                  {LEVELS.map((l) => (
-                    <button
-                      key={l}
-                      type="button"
-                      role="radio"
-                      aria-checked={l === level}
-                      onClick={() => onLevelChange(t.id, l)}
-                      className={cn(
-                        'size-8 rounded-md border text-sm font-medium transition-colors',
-                        l <= level
-                          ? 'border-primary bg-primary text-primary-foreground'
-                          : 'text-muted-foreground hover:bg-muted',
-                      )}
-                    >
-                      {l}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </li>
-          )
-        })}
-      </ul>
     </div>
   )
 }
