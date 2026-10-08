@@ -1,0 +1,822 @@
+openapi: 3.0.3
+info:
+  title: Squad & Team Generator API
+  version: 1.0.0
+  description: |
+    Contrat d'API OpenAPI 3.0.3 pour le générateur d'équipes (Squad Generator).
+    
+    **Stack technique convenue :**
+    - Runtime & Package Manager : Bun
+    - Validation des schémas : Zod
+    - Framework HTTP backend : Hono
+    - Frontend : React
+    
+    **Règle d'or de la Squad :**
+    - Aucune ligne de code d'implémentation avant validation et signature du contrat par les 5 membres de la squad.
+servers:
+  - url: http://localhost:3000
+    description: Serveur local de développement (Bun / Hono)
+
+tags:
+  - name: Members
+    description: Gestion des personnes / membres de la squad
+  - name: Groups
+    description: Gestion et génération des groupes de personnes
+  - name: Technos
+    description: Référentiel des technologies
+  - name: Specialities
+    description: Référentiel des spécialités
+
+paths:
+  # ==========================================
+  # MEMBERS ENDPOINTS
+  # ==========================================
+  /members:
+    get:
+      tags:
+        - Members
+      summary: Lister les membres
+      description: Récupère la liste de tous les membres enregistrés.
+      responses:
+        '200':
+          description: Liste des membres récupérée avec succès.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Member'
+              example:
+                - id: 1
+                  name: Dupont
+                  first_name: Jean
+                  technos: [1, 2]
+                  speciality_id: 1
+                - id: 2
+                  name: Martin
+                  first_name: Alice
+                  technos: [2]
+                  speciality_id: 2
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      tags:
+        - Members
+      summary: Ajouter une personne / membre
+      description: Crée un nouveau membre avec son nom, prénom, technologies et spécialité.
+      requestBody:
+        required: true
+        description: Données du membre à créer.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberInput'
+            example:
+              name: Dupont
+              first_name: Jean
+              technos: [1, 2]
+              speciality_id: 1
+      responses:
+        '201':
+          description: Membre créé avec succès.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+              example:
+                id: 1
+                name: Dupont
+                first_name: Jean
+                technos: [1, 2]
+                speciality_id: 1
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '422':
+          description: Échec de validation des données transmises.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Validation failed
+                message: Invalid speciality_id
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /members/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Identifiant unique du membre.
+        schema:
+          type: integer
+        example: 1
+
+    get:
+      tags:
+        - Members
+      summary: Obtenir un membre par ID
+      description: Récupère les informations détaillées d'un membre à partir de son identifiant.
+      responses:
+        '200':
+          description: Détails du membre récupérés.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+              example:
+                id: 1
+                name: Dupont
+                first_name: Jean
+                technos: [1, 2]
+                speciality_id: 1
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Membre non trouvé.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Not found
+                message: Member not found
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    patch:
+      tags:
+        - Members
+      summary: Mettre à jour partiellement un membre
+      description: Modifie un ou plusieurs champs d'un membre existant.
+      requestBody:
+        required: true
+        description: Champs du membre à mettre à jour.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberUpdateInput'
+            example:
+              first_name: Pierre
+              speciality_id: 3
+      responses:
+        '200':
+          description: Membre mis à jour avec succès.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+              example:
+                id: 1
+                name: Dupont
+                first_name: Pierre
+                technos: [1, 2]
+                speciality_id: 3
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Membre non trouvé.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Not found
+                message: Member not found
+        '422':
+          description: Échec de validation des données fournies.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Validation failed
+                message: Invalid speciality_id
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      tags:
+        - Members
+      summary: Supprimer un membre
+      description: Supprime définitivement un membre à partir de son identifiant.
+      responses:
+        '204':
+          description: Membre supprimé avec succès. Aucun contenu retourné.
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Membre non trouvé.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Not found
+                message: Member not found
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # ==========================================
+  # GROUPS ENDPOINTS
+  # ==========================================
+  /groups:
+    get:
+      tags:
+        - Groups
+      summary: Lister les groupes
+      description: Récupère la liste de tous les groupes existants.
+      responses:
+        '200':
+          description: Liste des groupes récupérée avec succès.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Group'
+              example:
+                - id: 1
+                  members: [1, 2, 3]
+                  group_level: 3
+                  group_name: Groupe A
+                  capacity: 3
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      tags:
+        - Groups
+      summary: Créer un groupe manuellement
+      description: Enregistre un nouveau groupe avec ses membres, son niveau et sa capacité.
+      requestBody:
+        required: true
+        description: Données du groupe à créer.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupInput'
+            example:
+              members: [1, 2, 3]
+              group_level: 3
+              group_name: Groupe A
+              capacity: 3
+      responses:
+        '201':
+          description: Groupe créé avec succès.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+              example:
+                id: 1
+                members: [1, 2, 3]
+                group_level: 3
+                group_name: Groupe A
+                capacity: 3
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '422':
+          description: Échec de validation (ex. capacité dépassée).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Validation failed
+                message: Group capacity exceeded
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /groups/generate/{capacity}:
+    parameters:
+      - name: capacity
+        in: path
+        required: true
+        description: Nombre maximum de personnes par groupe (capacité N).
+        schema:
+          type: integer
+        example: 3
+
+    post:
+      tags:
+        - Groups
+      summary: Générer des groupes de N personnes
+      description: |
+        Génère automatiquement des groupes à partir des membres disponibles selon la capacité N spécifiée dans l'URL.
+        Aucun corps de requête (body) n'est requis.
+      responses:
+        '201':
+          description: Groupes générés avec succès.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Group'
+              example:
+                - id: 1
+                  members: [1, 2, 3]
+                  group_level: 3
+                  group_name: Groupe A
+                  capacity: 3
+                - id: 2
+                  members: [4, 5, 6]
+                  group_level: 3
+                  group_name: Groupe B
+                  capacity: 3
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '422':
+          description: Échec de validation (capacité invalide ou membres insuffisants).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Validation failed
+                message: Invalid group capacity
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /groups/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Identifiant unique du groupe.
+        schema:
+          type: integer
+        example: 1
+
+    get:
+      tags:
+        - Groups
+      summary: Obtenir un groupe par ID
+      description: Récupère les détails d'un groupe spécifique.
+      responses:
+        '200':
+          description: Groupe récupéré avec succès.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+              example:
+                id: 1
+                members: [1, 2, 3]
+                group_level: 3
+                group_name: Groupe A
+                capacity: 3
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Groupe non trouvé.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Not found
+                message: Group not found
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      tags:
+        - Groups
+      summary: Supprimer un groupe
+      description: Supprime définitivement un groupe à partir de son identifiant.
+      responses:
+        '204':
+          description: Groupe supprimé avec succès. Aucun contenu retourné.
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Groupe non trouvé.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Not found
+                message: Group not found
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # ==========================================
+  # TECHNOLOGIES ENDPOINTS
+  # ==========================================
+  /technos:
+    get:
+      tags:
+        - Technos
+      summary: Lister les technologies
+      description: Récupère la liste de toutes les technologies disponibles.
+      responses:
+        '200':
+          description: Liste des technologies récupérée avec succès.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Techno'
+              example:
+                - id: 1
+                  name: React
+                - id: 2
+                  name: Laravel
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          description: Erreur interne lors de la récupération des technologies.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Internal server error
+                message: Unable to retrieve technologies
+
+  /technos/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Identifiant unique de la technologie.
+        schema:
+          type: integer
+        example: 1
+
+    get:
+      tags:
+        - Technos
+      summary: Obtenir une technologie par ID
+      description: Récupère les détails d'une technologie spécifique.
+      responses:
+        '200':
+          description: Détails de la technologie récupérés.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Techno'
+              example:
+                id: 1
+                name: React
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Technologie non trouvée.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Not found
+                message: Technology not found
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # ==========================================
+  # SPECIALITIES ENDPOINTS
+  # ==========================================
+  /specialities:
+    get:
+      tags:
+        - Specialities
+      summary: Lister les spécialités
+      description: Récupère la liste de toutes les spécialités disponibles.
+      responses:
+        '200':
+          description: Liste des spécialités récupérée avec succès.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Speciality'
+              example:
+                - id: 1
+                  name: Front-end
+                - id: 2
+                  name: Back-end
+                - id: 3
+                  name: Full-stack
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          description: Erreur interne lors de la récupération des spécialités.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Internal server error
+                message: Unable to retrieve specialities
+
+  /specialities/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Identifiant unique de la spécialité.
+        schema:
+          type: integer
+        example: 1
+
+    get:
+      tags:
+        - Specialities
+      summary: Obtenir une spécialité par ID
+      description: Récupère les détails d'une spécialité spécifique.
+      responses:
+        '200':
+          description: Spécialité récupérée avec succès.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Speciality'
+              example:
+                id: 1
+                name: Front-end
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Spécialité non trouvée.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Not found
+                message: Speciality not found
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+# ==========================================
+# COMPONENTS & SCHEMAS
+# ==========================================
+components:
+  schemas:
+    Member:
+      type: object
+      required:
+        - id
+        - name
+        - first_name
+        - technos
+        - speciality_id
+      properties:
+        id:
+          type: integer
+          description: Identifiant unique du membre.
+          example: 1
+        name:
+          type: string
+          description: Nom de famille du membre.
+          example: Dupont
+        first_name:
+          type: string
+          description: Prénom du membre.
+          example: Jean
+        technos:
+          type: array
+          description: Liste des IDs des technologies maîtrisées.
+          items:
+            type: integer
+          example: [1, 2]
+        speciality_id:
+          type: integer
+          description: ID de la spécialité du membre.
+          example: 1
+
+    MemberInput:
+      type: object
+      required:
+        - name
+        - first_name
+        - technos
+        - speciality_id
+      properties:
+        name:
+          type: string
+          description: Nom de famille du membre.
+          example: Dupont
+        first_name:
+          type: string
+          description: Prénom du membre.
+          example: Jean
+        technos:
+          type: array
+          description: Liste des IDs des technologies maîtrisées.
+          items:
+            type: integer
+          example: [1, 2]
+        speciality_id:
+          type: integer
+          description: ID de la spécialité du membre.
+          example: 1
+
+    MemberUpdateInput:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Nom de famille du membre.
+          example: Dupont
+        first_name:
+          type: string
+          description: Prénom du membre.
+          example: Pierre
+        technos:
+          type: array
+          description: Liste des IDs des technologies maîtrisées.
+          items:
+            type: integer
+          example: [1, 2]
+        speciality_id:
+          type: integer
+          description: ID de la spécialité du membre.
+          example: 3
+
+    Group:
+      type: object
+      required:
+        - id
+        - members
+        - group_level
+        - group_name
+        - capacity
+      properties:
+        id:
+          type: integer
+          description: Identifiant unique du groupe.
+          example: 1
+        members:
+          type: array
+          description: Liste des IDs des membres affectés au groupe.
+          items:
+            type: integer
+          example: [1, 2, 3]
+        group_level:
+          type: integer
+          description: Niveau global calculé du groupe.
+          example: 3
+        group_name:
+          type: string
+          description: Nom attribué au groupe.
+          example: Groupe A
+        capacity:
+          type: integer
+          description: Capacité maximale du groupe (taille N).
+          example: 3
+
+    GroupInput:
+      type: object
+      required:
+        - members
+        - group_level
+        - group_name
+        - capacity
+      properties:
+        members:
+          type: array
+          description: Liste des IDs des membres du groupe.
+          items:
+            type: integer
+          example: [1, 2, 3]
+        group_level:
+          type: integer
+          description: Niveau global calculé du groupe.
+          example: 3
+        group_name:
+          type: string
+          description: Nom attribué au groupe.
+          example: Groupe A
+        capacity:
+          type: integer
+          description: Capacité maximale du groupe.
+          example: 3
+
+    Techno:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: integer
+          description: Identifiant unique de la technologie.
+          example: 1
+        name:
+          type: string
+          description: Nom de la technologie.
+          example: React
+
+    Level:
+      type: object
+      description: Association du niveau d'expérience d'un membre sur une technologie spécifique.
+      required:
+        - experience
+        - member_id
+        - techno_id
+      properties:
+        experience:
+          type: integer
+          description: Niveau d'expérience (ex. 1 à 5).
+          example: 3
+        member_id:
+          type: integer
+          description: ID du membre associé.
+          example: 1
+        techno_id:
+          type: integer
+          description: ID de la technologie associée.
+          example: 2
+
+    Speciality:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: integer
+          description: Identifiant unique de la spécialité.
+          example: 1
+        name:
+          type: string
+          description: Nom de la spécialité.
+          example: Front-end
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Type ou intitulé court de l'erreur.
+          example: Bad request
+        message:
+          type: string
+          description: Message explicatif détaillé de l'erreur.
+          example: Invalid parameter provided
+
+  responses:
+    BadRequestError:
+      description: Requête mal formée ou paramètre invalide (400).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: Bad request
+            message: Invalid ID format
+
+    UnauthorizedError:
+      description: Authentification requise ou jeton manquant / invalide (401).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: Unauthorized
+            message: Authentication required
+
+    InternalServerError:
+      description: Erreur interne imprévue du serveur (500).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: Internal server error
+            message: An unexpected internal error occurred
