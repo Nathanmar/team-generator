@@ -8,10 +8,16 @@ export type Group = { id: number; group_name: string; capacity: number; group_le
 /** Membre tel que vu par le tirage : `level` = memberLevel (moyenne des moyennes front et back), 0 sans note. */
 export type DraftMember = { id: number; speciality: Speciality; level: number };
 
-const SPECIALITY_ORDER: Record<Speciality, number> = { front: 0, back: 1, fullstack: 2 };
+// Coefficients d'équilibrage : un fullstack compte comme un front ET un back (2 au total),
+// un front ou un back compte pour 1 de son côté. Un membre sans note ne couvre rien.
+const COVERAGE: Record<Speciality, { front: number; back: number }> = {
+  front: { front: 1, back: 0 },
+  back: { front: 0, back: 1 },
+  fullstack: { front: 1, back: 1 },
+};
 
-// Nombre de tirages comparés : on garde celui dont les niveaux moyens sont les plus proches.
-const DRAFT_ATTEMPTS = 30;
+// Poids de l'équilibre front / back face à celui des niveaux (prioritaire).
+const COVERAGE_WEIGHT = 10;
 
 const GREEK = [
   "Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta", "Eta", "Theta", "Iota", "Kappa", "Lambda", "Mu",
@@ -30,54 +36,63 @@ function shuffle<T>(items: T[], random: () => number): T[] {
   return copy;
 }
 
-/**
- * Répartit les membres en ceil(n / capacity) groupes, de tailles égales à 1 près (jamais plus de `capacity`).
- *
- * Tirage « par chapeaux » : les membres sont rangés front → back → fullstack, du plus fort au plus
- * faible, puis découpés en chapeaux d'autant de personnes qu'il y a de groupes. Chaque groupe reçoit
- * une personne par chapeau, placée au hasard parmi les groupes qui ont le moins de son profil :
- * les profils et les niveaux sont répartis, la composition reste aléatoire.
- */
-export function draftGroups(members: DraftMember[], capacity: number, random = Math.random): DraftMember[][] {
-  const groups: DraftMember[][] = Array.from({ length: Math.ceil(members.length / capacity) }, () => []);
-  const ordered = shuffle(members, random).sort(
-    (a, b) => SPECIALITY_ORDER[a.speciality] - SPECIALITY_ORDER[b.speciality] || b.level - a.level,
-  );
-
-  for (let start = 0; start < ordered.length; start += groups.length) {
-    const available = new Set(groups.keys());
-
-    for (const member of ordered.slice(start, start + groups.length)) {
-      const sameProfile = (g: number) => groups[g]!.filter((m) => m.speciality === member.speciality).length;
-      const fewest = Math.min(...[...available].map(sameProfile));
-      const choices = [...available].filter((g) => sameProfile(g) === fewest);
-      const pick = choices[Math.floor(random() * choices.length)]!;
-
-      groups[pick]!.push(member);
-      available.delete(pick);
-    }
-  }
-  return groups;
-}
+const coverage = (member: DraftMember) => (member.level === 0 ? { front: 0, back: 0 } : COVERAGE[member.speciality]);
 
 const averageLevel = (members: DraftMember[]) => average(members.filter((m) => m.level > 0).map((m) => m.level));
 
 /** group_level : moyenne arrondie des niveaux des membres notés (0 si aucun). */
 export const groupLevel = (members: DraftMember[]) => Math.round(averageLevel(members));
 
-const levelSpread = (groups: DraftMember[][]) => {
-  const levels = groups.map(averageLevel);
-  return Math.max(...levels) - Math.min(...levels);
-};
+/**
+ * Répartit les membres en ceil(n / capacity) groupes, de tailles égales à 1 près (jamais plus de `capacity`).
+ *
+ * Part d'une répartition aléatoire, puis échange des membres entre groupes tant que ça rapproche
+ * chaque groupe de sa part de front et de back (COVERAGE), puis du niveau moyen de la promo.
+ * Ex. front + back + fullstack en groupes de 2 → { front, back } et { fullstack }.
+ */
+export function draftGroups(members: DraftMember[], capacity: number, random = Math.random): DraftMember[][] {
+  const groups: DraftMember[][] = Array.from({ length: Math.ceil(members.length / capacity) }, () => []);
+  shuffle(members, random).forEach((member, i) => groups[i % groups.length]!.push(member));
 
-/** Meilleur de DRAFT_ATTEMPTS tirages : niveaux plus proches, composition toujours aléatoire. */
-export function balancedDraft(members: DraftMember[], capacity: number, random = Math.random): DraftMember[][] {
-  let best = draftGroups(members, capacity, random);
-  for (let attempt = 1; attempt < DRAFT_ATTEMPTS; attempt++) {
-    const candidate = draftGroups(members, capacity, random);
-    if (levelSpread(candidate) < levelSpread(best)) best = candidate;
+  const total = (list: DraftMember[], side: "front" | "back") => list.reduce((sum, m) => sum + coverage(m)[side], 0);
+  const totalFront = total(members, "front");
+  const totalBack = total(members, "back");
+  const meanLevel = averageLevel(members);
+
+  // Écart d'un groupe à sa juste part (proportionnelle à sa taille).
+  const cost = (group: DraftMember[]) => {
+    const share = group.length / members.length;
+    const sides = (total(group, "front") - totalFront * share) ** 2 + (total(group, "back") - totalBack * share) ** 2;
+    const level = group.some((m) => m.level > 0) ? (averageLevel(group) - meanLevel) ** 2 : 0;
+    return COVERAGE_WEIGHT * sides + level;
+  };
+
+  const costs = groups.map(cost);
+  let improved = true;
+  while (improved) {
+    improved = false;
+    for (const a of shuffle([...groups.keys()], random)) {
+      for (const b of shuffle([...groups.keys()], random)) {
+        if (a >= b) continue;
+        for (let i = 0; i < groups[a]!.length; i++) {
+          for (let j = 0; j < groups[b]!.length; j++) {
+            const x = groups[a]![i]!;
+            const y = groups[b]![j]!;
+            if (x.speciality === y.speciality && x.level === y.level) continue;
+
+            const nextA = groups[a]!.with(i, y);
+            const nextB = groups[b]!.with(j, x);
+            const [costA, costB] = [cost(nextA), cost(nextB)];
+            if (costA + costB < costs[a]! + costs[b]! - 1e-9) {
+              [groups[a], groups[b], costs[a], costs[b]] = [nextA, nextB, costA, costB];
+              improved = true;
+            }
+          }
+        }
+      }
+    }
   }
-  return best;
+  return groups;
 }
 
 export const groupName = (index: number) => `Squad ${GREEK[index] ?? index + 1}`;
@@ -117,7 +132,7 @@ export async function generateGroups(capacity: number): Promise<Group[]> {
     await tx`DELETE FROM groups`;
 
     const created: Group[] = [];
-    for (const [index, draft] of balancedDraft(members, capacity).entries()) {
+    for (const [index, draft] of draftGroups(members, capacity).entries()) {
       const group = { group_name: groupName(index), capacity, group_level: groupLevel(draft) };
       const [row] = await tx`INSERT INTO groups ${tx(group)} RETURNING id`;
       const memberIds = draft.map((m) => m.id).sort((a, b) => a - b);
