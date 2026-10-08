@@ -9,7 +9,8 @@ CREATE TABLE specialities (
 
 CREATE TABLE technos (
   id   SERIAL PRIMARY KEY,
-  name TEXT NOT NULL UNIQUE
+  name TEXT NOT NULL UNIQUE,
+  type TEXT NOT NULL CHECK (type IN ('front', 'back'))
 );
 
 CREATE TABLE members (
@@ -46,12 +47,13 @@ INSERT INTO specialities (name) VALUES
   ('Back-end'),
   ('Full-stack');
 
-INSERT INTO technos (name) VALUES
-  ('React'),
-  ('Laravel'),
-  ('Vue'),
-  ('Angular'),
-  ('Node.js'),
-  ('Symfony'),
-  ('PostgreSQL'),
-  ('Docker');
+INSERT INTO technos (name, type) VALUES
+  ('React', 'front'),
+  ('Hono', 'back'),
+  ('TypeScript', 'front'),
+  ('PostgreSQL', 'back'),
+  ('Vue', 'front'),
+  ('Angular', 'front'),
+  ('Node.js', 'back'),
+  ('Laravel', 'back'),
+  ('Symfony', 'back');
