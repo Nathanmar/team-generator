@@ -11,9 +11,7 @@ export type MemberTechnoInput = { techno_id: number; level: number };
 /** MemberTechnoDetail (openapi.yml). */
 export type MemberTechno = { techno_id: number; name: string; type: TechnoType; level: number };
 
-// Écart de moyenne front / back en dessous duquel un membre est fullstack.
-// Règle provisoire : le contrat dit seulement « selon la moyenne des notes front vs back ».
-const FULLSTACK_THRESHOLD = 1;
+const FULLSTACK_RATIO = 0.2;
 
 const average = (levels: number[]) =>
   levels.length === 0 ? null : levels.reduce((sum, level) => sum + level, 0) / levels.length;
@@ -25,13 +23,14 @@ export function sideAverages(technos: MemberTechno[]): { front: number | null; b
   return { front: side("front"), back: side("back") };
 }
 
-/** Profil déduit des notes : un côté sans techno compte pour 0. */
 export function computeSpeciality(technos: MemberTechno[]): Speciality {
-  const { front, back } = sideAverages(technos);
-  const gap = (front ?? 0) - (back ?? 0);
+  const score = (type: "front" | "back") =>
+    technos.filter((t) => t.type === type || t.type === "fullstack").reduce((sum, t) => sum + t.level, 0);
+  const front = score("front");
+  const back = score("back");
 
-  if (Math.abs(gap) < FULLSTACK_THRESHOLD) return "fullstack";
-  return gap > 0 ? "front" : "back";
+  if (Math.abs(front - back) <= FULLSTACK_RATIO * Math.max(front, back)) return "fullstack";
+  return front > back ? "front" : "back";
 }
 
 /** Niveau utilisé pour les groupes : moyenne des moyennes front et back (côté sans note ignoré), 0 sans note. */

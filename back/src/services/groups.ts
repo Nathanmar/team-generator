@@ -106,6 +106,9 @@ export async function generateGroups(capacity: number): Promise<Group[]> {
     }
 
     const technos = await getMembersTechnos(ids, tx);
+    if (ids.some((id: number) => (technos.get(id) ?? []).length === 0)) {
+      throw new HTTPException(422, { message: "Every member must have at least one techno to generate groups" });
+    }
     const members: DraftMember[] = ids.map((id: number) => {
       const memberTechnos = technos.get(id) ?? [];
       return { id, speciality: computeSpeciality(memberTechnos), level: memberLevel(memberTechnos) };
