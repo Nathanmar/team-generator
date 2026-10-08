@@ -71,6 +71,8 @@ app.onError((err, c) => {
   return c.json({ error: "Internal server error", message: "An unexpected internal error occurred" }, 500);
 });
 
+export { app };
+
 export default {
   port: env.PORT,
   fetch: app.fetch,

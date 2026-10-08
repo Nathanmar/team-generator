@@ -14,7 +14,7 @@ tags:
   - name: Groups
     description: Génération et consultation des groupes équilibrés
   - name: Technos
-    description: Référentiel des technologies avec leur catégorie (front / back)
+    description: Référentiel des technologies avec leur catégorie (front / back / fullstack)
 
 paths:
   # ==========================================
@@ -350,7 +350,7 @@ paths:
           $ref: '#/components/responses/InternalServerError'
 
   # ==========================================
-  # ENTITÉ : TECHNOS (RÉFÉRENTIEL AVEC FLAG FRONT/BACK)
+  # ENTITÉ : TECHNOS (RÉFÉRENTIEL AVEC FLAG FRONT/BACK/FULLSTACK)
   # ==========================================
   /technos:
     get:
@@ -358,7 +358,7 @@ paths:
         - Technos
       summary: Lister les technologies disponibles
       description: |
-        Récupère toutes les technologies avec leur catégorie (front ou back).
+        Récupère toutes les technologies avec leur catégorie (front, back ou fullstack).
         Permet au front d'afficher la sélection des technologies lors de l'inscription.
       responses:
         '200':
@@ -378,7 +378,7 @@ paths:
                   type: back
                 - id: 3
                   name: TypeScript
-                  type: front
+                  type: fullstack
                 - id: 4
                   name: PostgreSQL
                   type: back
@@ -392,7 +392,7 @@ components:
   schemas:
     Techno:
       type: object
-      description: Technologie avec son positionnement Front ou Back.
+      description: Technologie avec son positionnement Front, Back ou Fullstack.
       required:
         - id
         - name
@@ -408,8 +408,8 @@ components:
           example: React
         type:
           type: string
-          enum: [front, back]
-          description: Catégorie de la technologie (permet de déduire le profil front/back).
+          enum: [front, back, fullstack]
+          description: Catégorie de la technologie (front, back ou fullstack).
           example: front
 
     MemberTechnoInput:
@@ -447,7 +447,7 @@ components:
           example: React
         type:
           type: string
-          enum: [front, back]
+          enum: [front, back, fullstack]
           example: front
         level:
           type: integer
