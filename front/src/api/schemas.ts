@@ -8,10 +8,16 @@ import { z } from 'zod'
 const id = z.number().int().positive()
 
 // ---------- Technos ----------
-export const technoSchema = z.object({ 
-  id, 
+/**
+ * Catégorie d'une techno. `fullstack` (ex. Next.js) est en avance sur `openapi.yml`,
+ * qui ne prévoit encore que `front | back` : le contrat doit être mis à jour.
+ */
+export const technoTypeSchema = z.enum(['front', 'back', 'fullstack'])
+
+export const technoSchema = z.object({
+  id,
   name: z.string(),
-  type: z.enum(['front', 'back'])
+  type: technoTypeSchema,
 })
 
 export const memberTechnoInputSchema = z.object({
@@ -22,7 +28,7 @@ export const memberTechnoInputSchema = z.object({
 export const memberTechnoDetailSchema = z.object({
   techno_id: id,
   name: z.string(),
-  type: z.enum(['front', 'back']),
+  type: technoTypeSchema,
   level: z.number().int().min(1).max(5),
 })
 

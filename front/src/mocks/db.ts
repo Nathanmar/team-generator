@@ -10,10 +10,15 @@ import type { Group, Member, MemberTechnoInput, Techno } from '@/api/schemas'
 const average = (values: number[]) =>
   values.length ? values.reduce((sum, v) => sum + v, 0) / values.length : 0
 
-/** Spécialité déduite de la moyenne des notes front vs back (écart < 1 => fullstack). */
+/**
+ * Spécialité déduite de la moyenne des notes front vs back (écart < 1 => fullstack).
+ * Une techno fullstack compte des deux côtés.
+ */
 function computeSpeciality(technos: Member['technos']): Member['speciality'] {
-  const front = average(technos.filter((t) => t.type === 'front').map((t) => t.level))
-  const back = average(technos.filter((t) => t.type === 'back').map((t) => t.level))
+  const levelsOf = (type: 'front' | 'back') =>
+    technos.filter((t) => t.type === type || t.type === 'fullstack').map((t) => t.level)
+  const front = average(levelsOf('front'))
+  const back = average(levelsOf('back'))
   if (Math.abs(front - back) < 1) return 'fullstack'
   return front > back ? 'front' : 'back'
 }
@@ -31,6 +36,8 @@ export const technos: Techno[] = [
   { id: 6, name: 'Tailwind CSS', type: 'front' },
   { id: 7, name: 'Node.js', type: 'back' },
   { id: 8, name: 'Docker', type: 'back' },
+  { id: 9, name: 'Next.js', type: 'fullstack' },
+  { id: 10, name: 'Nuxt', type: 'fullstack' },
 ]
 
 let nextMemberId = 1
@@ -61,7 +68,8 @@ const seed: MemberSeed[] = [
   ['Moreau', 'Nathan', { 7: 2, 8: 2, 4: 1 }],
   ['Simon', 'Léa', { 1: 2, 5: 3, 3: 2 }],
   ['Laurent', 'Tom', { 2: 4, 7: 5, 8: 4 }],
-  ['Michel', 'Inès', { 1: 3, 2: 3, 3: 3, 4: 3 }],
+  ['Michel', 'Inès', { 1: 3, 2: 3, 3: 3, 4: 3, 9: 4 }],
+  ['Garcia', 'Yanis', { 9: 4, 10: 3, 7: 3 }],
 ]
 
 export const members: Member[] = seed.map(([name, firstName, levels]) =>
