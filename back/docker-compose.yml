@@ -11,7 +11,8 @@ services:
       - "${DB_PORT:-5432}:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
-      - ./db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      # ",z" : relabel SELinux (Fedora…), ignoré sur les autres OS
+      - ./db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro,z
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U team -d team_generator"]
       interval: 5s

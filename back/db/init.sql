@@ -48,4 +48,10 @@ INSERT INTO specialities (name) VALUES
 
 INSERT INTO technos (name) VALUES
   ('React'),
-  ('Laravel');
+  ('Laravel'),
+  ('Vue'),
+  ('Angular'),
+  ('Node.js'),
+  ('Symfony'),
+  ('PostgreSQL'),
+  ('Docker');
